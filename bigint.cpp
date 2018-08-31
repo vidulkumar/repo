@@ -99,7 +99,7 @@ BigInteger BigInteger:: operator+(const BigInteger& B)
         }
         //if(O.arr[0]==0)
          //  O.len=O.len-1;
-        O.print();
+        O.print();//here it prints as expected 
      return O;
     }
 
@@ -112,7 +112,7 @@ int main()
     b.input();
     c= a + b;
     cout<<"\n sum is  : ";
-    c.print();
+    c.print();//diffent value printed here
     cout<<endl;
     a.print();
     return 0;
