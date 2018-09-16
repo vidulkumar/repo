@@ -46,7 +46,7 @@ void preorder(struct node* root)
 {
 	if (root != NULL)
 	{   cout<<"\n";
-	    for(int i=0;i<=maxDepth(root);i++)
+	    for(int i=0;i<2*(maxDepth(root));i++)
             cout<<"-";
 	    cout<<root->data<<" ";
 		preorder(root->left);
