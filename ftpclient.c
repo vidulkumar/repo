@@ -16,6 +16,19 @@
 /*for O_RDONLY*/
 #include<fcntl.h>
 
+void errormsg(int error)
+{
+ if(error==530)
+   printf("530 :YOU are not logged in ");
+else if(error==331)
+   printf("331 :username exists password needed ");
+else if(error==332)
+   printf("332 :NO USER FOUND ");
+	 	 
+
+}
+
+
 int main(int argc,char *argv[])
 {
   struct sockaddr_in server;
@@ -45,25 +58,24 @@ int main(int argc,char *argv[])
     {
       printf("---------------------\n");
 			gets(text);
-	if (strncmp(text,"USER",4)==0) {
-		strcpy(buf, text);
+if (strncmp(text,"USER",4)==0) {
+		    strcpy(buf, text);
 			  send(sock, buf, 100, 0);
-	    recv(sock, &status, sizeof(int), 0);
-		if(status)
-	    printf("user exist password needed\n");
-	  else
-	    printf("error\n");
+	      recv(sock, &status, sizeof(int), 0);
+		    if(status)
+	       errormsg(status);
+	      else
+	       printf("error\n");
 	}
 			
-else 
-	if (strncmp(text,"PASS",4)==0) {
-		strcpy(buf, text);
+else if (strncmp(text,"PASS",4)==0) {
+		    strcpy(buf, text);
 			  send(sock, buf, 100, 0);
-	    recv(sock, &status, sizeof(int), 0);
-		if(status)
-	    printf("logged in\n");
-	  else
-	    printf("error\n");
+	      recv(sock, &status, sizeof(int), 0);
+		    if(status)
+	        printf("logged in\n");
+	      else
+	        printf("error\n");
 	}
 			
 else 
@@ -71,9 +83,9 @@ else
 		strcpy(buf, text);
 			  send(sock, buf, 100, 0);
 	    recv(sock, &status, sizeof(int), 0);
-		if(status)
+	  	if(status==1)
 	    printf("user created successfully\n");
-	  else
+	    else
 	    printf("error\n");
 	}
 			
@@ -85,7 +97,11 @@ else  if(strncmp(text,"RETR",4)==0)
 		printf("filename is : %s",filename);
 	  send(sock, buf, 100, 0);
 	  recv(sock, &size, sizeof(int), 0);
-	  if(!size)
+	  if(size==530)
+		{
+			errormsg(size);
+		}
+		else if(!size)
 	    {
 	      printf("No such file on the remote directory\n\n");
 	    break;
@@ -96,9 +112,9 @@ else  if(strncmp(text,"RETR",4)==0)
 	    {
 	      filehandle = open(filename, O_CREAT | O_EXCL | O_WRONLY, 0666);
 	      if(filehandle == -1)
-		{
-		  sprintf(filename + strlen(filename), "%d", i);//needed only if same directory is used for both server and client
-		}
+	     	{
+		     sprintf(filename + strlen(filename), "%d", i);//needed only if same directory is used for both server and client
+	   	  }
 	      else break;
 	    }
 	  write(filehandle, f, size, 0);
@@ -117,8 +133,8 @@ else  if(strncmp(text,"RETR",4)==0)
               printf("No such file on the local directory\n\n");
               break;
             }
-          strcpy(buf, "STOR ");
-	  strcat(buf, filename);
+         // strcpy(buf, "STOR ");
+	  //strcat(buf, filename);
 	  send(sock, buf, 100, 0);
 	  stat(filename, &obj);
 	  size = obj.st_size;
@@ -130,74 +146,98 @@ else  if(strncmp(text,"RETR",4)==0)
 	  else
 	    printf("File failed to be stored to remote machine\n");
 	}
-else if(strncmp(text,"PWD ",4)==0)
+else if(strncmp(text,"PWD",3)==0)
 	{
-	  strcpy(buf, text);
-	  send(sock, buf, 100, 0);
-	  recv(sock, buf, 100, 0);
-	  printf("The path of the remote directory is: %s\n", buf);
-
+	       strcpy(buf, text);
+	       send(sock, buf, 100, 0);
+	       recv(sock, buf, 100, 0);
+				 if(buf==530)
+				 { errormsg(530);}
+				 else
+				 {
+					
+	       printf("The path of the remote directory is: %s\n", buf);
+				 }
 		}
 else if(strncmp(text,"LIST",4)==0)
 	{
-	  strcpy(buf, "LIST");
+	        strcpy(buf, "LIST");
           send(sock, buf, 100, 0);
-	  recv(sock, &size, sizeof(int), 0);
+	        recv(sock, &size, sizeof(int), 0);
+       if(size==530)
+			 {errormsg(size);}
+			 else{
+
           f = malloc(size);
           recv(sock, f, size, 0);
-	  filehandle = creat("temp.txt", O_WRONLY);
-	  write(filehandle, f, size, 0);
-	  close(filehandle);
+	        filehandle = creat("temp.txt", O_WRONLY);
+	        write(filehandle, f, size, 0);
+	        close(filehandle);
           printf("The remote directory listing is as follows:\n");
-	  system("cat temp.txt");
+	        system("cat temp.txt");
+			 }
 	}
-else if(strncmp(text,"CWD ",4)==0)
+else if(strncmp(text,"CWD",3)==0)
 	{
-	  strcpy(buf, text);
+	        strcpy(buf, text);
           send(sock, buf, 100, 0);
           printf("\ndata sent");
-	  recv(sock, &status, sizeof(int), 0);
-          if(status)
+	        recv(sock, &status, sizeof(int), 0);
+          if(status==1)
             printf("Remote directory successfully changed\n");
           else
-            printf("Remote directory failed to change\n");
+            errormsg(status);
           break;
  	}
 else if(strncmp(text,"MKD ",4)==0)
 	{      
-	  strcpy(buf, text);
-          printf("error %ld ",send(sock, buf, sizeof(buf), 0));
+	        strcpy(buf, text);
+          send(sock, buf, sizeof(buf), 0);
           printf("\ndata sent");
-	  recv(sock, &status, sizeof(int), 0);
-          if(status)
+	        recv(sock, &status, sizeof(int), 0);
+          if(status==1)
             printf("Remote directory successfully created\n");
           else
-            printf("Remote directory failed to create\n");
+            errormsg(status);
    	}
 else if(strncmp(text,"RMD ",4)==0)
 	{      
-	  strcpy(buf, text);
-          printf("error %ld ",send(sock, buf, sizeof(buf), 0));
+	        strcpy(buf, text);
+          send(sock, buf, sizeof(buf), 0);
           printf("\ndata sent");
-	  recv(sock, &status, sizeof(int), 0);
-          if(status)
+	        recv(sock, &status, sizeof(int), 0);
+          if(status==1)
             printf("Remote directory successfully deleted\n");
           else
-            printf("Remote directory failed to delete\n");
+            errormsg(status);
    	}
-else if(strncmp(text,"QUIT",4)==0)
-	{ strcpy(buf, text);
+else if(strncmp(text,"ABOR",4)==0)
+	{      strcpy(buf, text);
+          send(sock, buf, 100, 0);
+
+
+          recv(sock, &status, 100, 0);
+	       if(status)
+	        {
+	         printf("Session reset\n");
+	        }
+	    	 else	
+	       { errormsg(status); }
+	} 
+	else if(strncmp(text,"QUIT",4)==0)
+	{       strcpy(buf, text);
           send(sock, buf, 100, 0);
           recv(sock, &status, 100, 0);
-	  if(status)
-	    {
-	      printf("Server closed\nQuitting..\n");
-	      exit(0);
-	    }
-	    printf("Server failed to close connection\n");
+	       if(status)
+	        {
+	          printf("Server closed\nQuitting..\n");
+	          exit(0);
+	        }
+	        printf("Server failed to close connection\n");
 	}
 else{
-	printf("NO SUCH COMMAND"); 
+	        status =502;
+		      errormsg(status);
     }
 
     }
