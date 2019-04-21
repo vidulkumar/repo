@@ -16,26 +16,13 @@
 /*for O_RDONLY*/
 #include<fcntl.h>
 
-void errormsg(int error)
-{
- if(error==530)
-   printf("530 :YOU are not logged in ");
-else if(error==331)
-   printf("331 :username exists password needed ");
-else if(error==332)
-   printf("332 :NO USER FOUND ");
-	 	 
-
-}
-
-
 int main(int argc,char *argv[])
 {
   struct sockaddr_in server;
   struct stat obj;
   int sock;
   int choice;
-  char buf[100], command[5], filename[20], *f,text[20];
+  char buf[100], command[5], filename[20], *f;
   int k, size, status;
   int filehandle;
   sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -56,52 +43,18 @@ int main(int argc,char *argv[])
   int i = 1;
   while(1)
     {
-      printf("---------------------\n");
-			gets(text);
-if (strncmp(text,"USER",4)==0) {
-		    strcpy(buf, text);
-			  send(sock, buf, 100, 0);
-	      recv(sock, &status, sizeof(int), 0);
-		    if(status)
-	       errormsg(status);
-	      else
-	       printf("error\n");
-	}
-			
-else if (strncmp(text,"PASS",4)==0) {
-		    strcpy(buf, text);
-			  send(sock, buf, 100, 0);
-	      recv(sock, &status, sizeof(int), 0);
-		    if(status)
-	        printf("logged in\n");
-	      else
-	        printf("error\n");
-	}
-			
-else 
-	if (strncmp(text,"CRET",4)==0) {
-		strcpy(buf, text);
-			  send(sock, buf, 100, 0);
-	    recv(sock, &status, sizeof(int), 0);
-	  	if(status==1)
-	    printf("user created successfully\n");
-	    else
-	    printf("error\n");
-	}
-			
-else  if(strncmp(text,"RETR",4)==0)
+      printf("Enter a choice:\n1- get\n2- put\n3- pwd\n4- ls\n5- cd\n6- mkd\n7 rmd\n8 quit\n");
+      scanf("%d", &choice);
+      switch(choice)
 	{
-	  strcpy(buf, text);
-
-		sscanf(text, "%s%s", filename, filename);
-		printf("filename is : %s",filename);
+	case 1:
+	  printf("Enter filename to get: ");
+	  scanf("%s", filename);
+	  strcpy(buf, "get ");
+	  strcat(buf, filename);
 	  send(sock, buf, 100, 0);
 	  recv(sock, &size, sizeof(int), 0);
-	  if(size==530)
-		{
-			errormsg(size);
-		}
-		else if(!size)
+	  if(!size)
 	    {
 	      printf("No such file on the remote directory\n\n");
 	    break;
@@ -112,9 +65,9 @@ else  if(strncmp(text,"RETR",4)==0)
 	    {
 	      filehandle = open(filename, O_CREAT | O_EXCL | O_WRONLY, 0666);
 	      if(filehandle == -1)
-	     	{
-		     sprintf(filename + strlen(filename), "%d", i);//needed only if same directory is used for both server and client
-	   	  }
+		{
+		  sprintf(filename + strlen(filename), "%d", i);//needed only if same directory is used for both server and client
+		}
 	      else break;
 	    }
 	  write(filehandle, f, size, 0);
@@ -122,19 +75,18 @@ else  if(strncmp(text,"RETR",4)==0)
 	  strcpy(buf, "cat ");
 	  strcat(buf, filename);
 	  system(buf);
-	}
-	else if(strncmp(text,"STOR",4)==0)
-	{
-	  strcpy(buf, text);
-		sscanf(text, "%s%s", filename, filename);
+	  break;
+	case 2:
+	  printf("Enter filename to put to server: ");
+          scanf("%s", filename);
 	  filehandle = open(filename, O_RDONLY);
           if(filehandle == -1)
             {
               printf("No such file on the local directory\n\n");
               break;
             }
-         // strcpy(buf, "STOR ");
-	  //strcat(buf, filename);
+          strcpy(buf, "put ");
+	  strcat(buf, filename);
 	  send(sock, buf, 100, 0);
 	  stat(filename, &obj);
 	  size = obj.st_size;
@@ -145,100 +97,75 @@ else  if(strncmp(text,"RETR",4)==0)
 	    printf("File stored successfully\n");
 	  else
 	    printf("File failed to be stored to remote machine\n");
-	}
-else if(strncmp(text,"PWD",3)==0)
-	{
-	       strcpy(buf, text);
-	       send(sock, buf, 100, 0);
-	       recv(sock, buf, 100, 0);
-				 if(buf==530)
-				 { errormsg(530);}
-				 else
-				 {
-					
-	       printf("The path of the remote directory is: %s\n", buf);
-				 }
-		}
-else if(strncmp(text,"LIST",4)==0)
-	{
-	        strcpy(buf, "LIST");
+	  break;
+	case 3:
+	  strcpy(buf, "pwd");
+	  send(sock, buf, 100, 0);
+	  recv(sock, buf, 100, 0);
+	  printf("The path of the remote directory is: %s\n", buf);
+	  break;
+	case 4:
+	  strcpy(buf, "ls");
           send(sock, buf, 100, 0);
-	        recv(sock, &size, sizeof(int), 0);
-       if(size==530)
-			 {errormsg(size);}
-			 else{
-
+	  recv(sock, &size, sizeof(int), 0);
           f = malloc(size);
           recv(sock, f, size, 0);
-	        filehandle = creat("temp.txt", O_WRONLY);
-	        write(filehandle, f, size, 0);
-	        close(filehandle);
+	  filehandle = creat("temp.txt", O_WRONLY);
+	  write(filehandle, f, size, 0);
+	  close(filehandle);
           printf("The remote directory listing is as follows:\n");
-	        system("cat temp.txt");
-			 }
-	}
-else if(strncmp(text,"CWD",3)==0)
-	{
-	        strcpy(buf, text);
+	  system("cat temp.txt");
+	  break;
+	case 5:
+	  strcpy(buf, "cd ");
+	  printf("Enter the path to change the remote directory: ");
+	  scanf("%s", buf + 3);
           send(sock, buf, 100, 0);
           printf("\ndata sent");
-	        recv(sock, &status, sizeof(int), 0);
-          if(status==1)
+	  recv(sock, &status, sizeof(int), 0);
+          if(status)
             printf("Remote directory successfully changed\n");
           else
-            errormsg(status);
+            printf("Remote directory failed to change\n");
           break;
- 	}
-else if(strncmp(text,"MKD ",4)==0)
-	{      
-	        strcpy(buf, text);
-          send(sock, buf, sizeof(buf), 0);
+        case 6:
+           
+	  strcpy(buf, "mkdir ");
+	  printf("Enter the directory name to be created: ");
+	  scanf("%s", buf + 6);
+           printf("\nscan finished");
+          printf("error %ld ",send(sock, buf, sizeof(buf), 0));
           printf("\ndata sent");
-	        recv(sock, &status, sizeof(int), 0);
-          if(status==1)
+	  recv(sock, &status, sizeof(int), 0);
+          if(status)
             printf("Remote directory successfully created\n");
           else
-            errormsg(status);
-   	}
-else if(strncmp(text,"RMD ",4)==0)
-	{      
-	        strcpy(buf, text);
-          send(sock, buf, sizeof(buf), 0);
+            printf("Remote directory failed to create\n");
+          break;
+        case 7:
+           
+	  strcpy(buf, "rmdir ");
+	  printf("Enter the directory name to be deleted: ");
+	  scanf("%s", buf + 6);
+           printf("\nscan finished");
+          printf("error %ld ",send(sock, buf, sizeof(buf), 0));
           printf("\ndata sent");
-	        recv(sock, &status, sizeof(int), 0);
-          if(status==1)
+	  recv(sock, &status, sizeof(int), 0);
+          if(status)
             printf("Remote directory successfully deleted\n");
           else
-            errormsg(status);
-   	}
-else if(strncmp(text,"ABOR",4)==0)
-	{      strcpy(buf, text);
-          send(sock, buf, 100, 0);
-
-
-          recv(sock, &status, 100, 0);
-	       if(status)
-	        {
-	         printf("Session reset\n");
-	        }
-	    	 else	
-	       { errormsg(status); }
-	} 
-	else if(strncmp(text,"QUIT",4)==0)
-	{       strcpy(buf, text);
+            printf("Remote directory failed to delete\n");
+          break;        
+	case 8:
+	  strcpy(buf, "quit");
           send(sock, buf, 100, 0);
           recv(sock, &status, 100, 0);
-	       if(status)
-	        {
-	          printf("Server closed\nQuitting..\n");
-	          exit(0);
-	        }
-	        printf("Server failed to close connection\n");
+	  if(status)
+	    {
+	      printf("Server closed\nQuitting..\n");
+	      exit(0);
+	    }
+	    printf("Server failed to close connection\n");
 	}
-else{
-	        status =502;
-		      errormsg(status);
-    }
-
     }
 }
